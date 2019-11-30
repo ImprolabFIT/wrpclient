@@ -4,7 +4,7 @@ Client part of the unofficial remote connector for Thermal cameras by Workswell.
 
 ## Motivation
 
-We would like to connect to [Thermal cameras by Workswell](https://workswell.cz/termokamera-workswell-infrared-camera-wic/) with Python, preferably from the Jupyter notebook, for the BI&#x2011;SVZ class. Problem is that Workswell provides and supports access to the cameras only through their C# SDK. Solution is to write a server-client connector. Server part of the application will be running on Windows with installed C# SDK and connected cameras to the same subnetwork. Client, implemented in this repository, is written in Python and thus is independent on the operating system. 
+We would like to connect to [Thermal cameras by Workswell](https://workswell.cz/termokamera-workswell-infrared-camera-wic/) with Python, preferably from the Jupyter notebook, for the [BI&#x2011;SVZ class](https://github.com/ImprolabFIT/BI-SVZ-coursework). Problem is that Workswell provides and supports access to the cameras only through their C# SDK. Solution is to write a server-client connector. Server part of the application will be running on Windows with installed C# SDK and connected cameras to the same subnetwork. Client, implemented in this repository, is written in Python and thus is independent on the operating system. 
 
 ## Instalation
 
