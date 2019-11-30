@@ -1,6 +1,6 @@
 # Remote server-client connector for WIC SDK
 
-Unofficial remote connector for Thermal cameras by Workswell. 
+Client part of the unofficial remote connector for Thermal cameras by Workswell. 
 
 ## Motivation
 
@@ -48,20 +48,33 @@ asyncio.sleep(5)
 my_camera.stop_continuous_shot(callback)
 ```
 
-There could be also a more advanced usage, where timeouts are not used in functions like `open`, `get_frame` etc, but these methods are asynchronous as well and are used in cooperation of asyncio library. 
-
 ## Implementation
 
-There are 2 classes accessible to you (Client, Camera) and three hidden classes (Driver, WRPConnector and Message).
+There are 2 classes accessible to the user (Client, Camera) and three hidden classes (Driver, WRPConnector and Message).
 Their description is:
 
-1. *Client* was given a IP address and port of the WRP server, is able to connect and get list of cameras connected to the server.  
-2. *Camera* represents Thermal camery by Workswell. Provides information about camera device, e.g. model name, serial number, maximal width and height of provided frame etc. Each camera has its own instance of WRPConnector and can through it call function like `get_frame` or `start_continuous_shot`. 
+1. *Client* was given a IP address and port of the WRP server. Is able to connect and get list of cameras connected to the server.  
+2. *Camera* represents Thermal camera by Workswell. Provides information about camera device, e.g. model name, serial number, maximal width and height of provided frame etc. Each camera has its own instance of WRPConnector and can through it call function like `get_frame` or `start_continuous_shot`. 
 3. *WRPConnector* works like a finite state machine and implements logic of the application protocol WRP. 
 2. *Message* is a structure handy for passing all the informations about the message together. Contains dynamic attributes according to the type of message and is able to serialize itself according to WRP.  
 3. *Driver* keeps connection (socket) with the server and is responsible for asynchronous sending and receiving messages on the order of the WRPConnector.
 
+
+## Notes for MI-PYT semestral work
+
+If you think that this project is not enough ambitious for the MI-PYT semestral work (although to write state finite machine using asyncio seems challenging to me), I could implement some of these extensions:
+
+1. More advanced usage, where timeouts are not used in functions `open`, `get_frame` etc., but these methods are asynchronous as well and are used in cooperation with the asyncio library. 
+
+2. Inner methods of *Driver*, *Message* and *WRPConnector* classes could be implemented in Cython to provide sufficient speed. This could be handy because these methods will be called 30 times (or more) a second to process each frame.
+
+3. GUI where you can fill IP address of the server, select camera and watch the stream of frames. But that would probably be better as an independent project that only uses this client, because what most of the users (at least BI-SVZ students) want is an API to get the frame, which they can process.
+
+4. Command Line Interface, that provides reasonable scenarios, e.g. connect to IP address XXX.XXX.XXX.XXX, take Y frames and save them to files ZZZ_1.png, ..., ZZZ_Y.png.
+
 #### Workswell Remote Protocol (WRP)
 
-Here goes defition and description of WRP protocol. 
+Here goes the definition and description of the WRP protocol. 
+
+
 
