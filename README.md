@@ -20,21 +20,15 @@ import asyncio
 client = Client()
 client.connect(ip_adress="214.178.132.14", port=8412, timeout=60)
 
-# get list of instances of Camera class
-cameras = client.get_cameras()
-
-# find specific camera
-try:
-	my_camera = [c for c in cameras if c.serial_number == "ABCDEF"][0]
-except IndexError:
-	raise CameraNotFound()
+# find camera with specific serial number
+my_camera = client.get_camera(serial_number="ABCDEF")
 
 my_camera.open(timeout="20")
 
 # Return frame (numpy matrix) filled with raw data with shape (my_camera.height, my_camera.width)
 frame = my_camera.get_frame(timeout="20")
 
-def callback(frame):
+mdef callback(frame):
 	time_str = datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
 	frame_color = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
 	cv2.imwrite(f"frame-{time_str}.jpg", frame_color)
