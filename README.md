@@ -28,12 +28,12 @@ my_camera.open(timeout="20")
 # Return frame (numpy matrix) filled with raw data with shape (my_camera.height, my_camera.width)
 frame = my_camera.get_frame(timeout="20")
 
-mdef callback(frame):
+def callback(frame):
 	time_str = datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
 	frame_color = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
 	cv2.imwrite(f"frame-{time_str}.jpg", frame_color)
 
-# Return frame (numpy matrix) filled with raw data with shape (my_camera.height, my_camera.width)
+# Give handler for continuous shot that saves colorized images with timestamp suffix
 my_camera.start_continuous_shot(callback)
 
 # Wait some time to collect images
