@@ -5,11 +5,34 @@ class Message:
 	'''
 	TODO add docstring
 	'''
+	
 	__buffer = bytearray()
+	PAYLOAD_SIZE_LENGTH = 4
+	CAMERA_ID_LENGTH = 1
+	
+	ERROR_CODE_ATTR_NAME = 'error_code'
+	CAMERA_ID_ATTR_NAME = 'camera_id'
+	XML_CAMERA_LIST_ATTR_NAME = 'xml_camera_list'
+	CAMERA_SERIAL_NUMBER_ATTR_NAME = 'camera_serial'
+	FRAME_NUMBER_ATTR_NAME = 'frame_number'
+	FRAME_TIMESTAMP_ATTR_NAME = 'frame_timestamp'
+	FRAME_ATTR_NAME = 'frame'
+
 
 	class Type(Enum):
-		GET_CAMERAS_REQ = 1
-		GET_CAMERAS_RESP = 2
+		INVALID = 0
+		OK = 1
+		ERROR = 2
+		GET_CAMERA_LIST = 3
+		CAMERA_LIST = 4
+		OPEN_CAMERA = 5
+		CLOSE_CAMERA = 6
+		ACK_CAMERA = 7
+		GET_FRAME = 8
+		FRAME = 9
+		START_CONTINUOUS_GRABBING = 10
+		STOP_CONTINUOUS_GRABBING = 11
+		ACK_CONTINUOUS_GRABBING = 12
 
 	def __init__(self):
 		pass
@@ -21,39 +44,171 @@ class Message:
 		return f"{self.msg_type}({self.msg_type.value}), buffer: {self.__buffer}"
 
 	@staticmethod
-	def create_message(**kwargs):
+	def is_int_valid_message_type(message_type_value):
+		'''
+			TODO
+		'''
+		return message_type_value in [t.value for t in Message.Type if t.name != "INVALID"]
+
+	@staticmethod
+	def convert_int_to_message_type(message_type_value):
+		'''
+			TODO
+		'''
+		if(not isinstance(message_type_value, int)):
+			raise ValueError("Parameter message_type_value must be int")
+
+		if(not Message.is_int_valid_message_type(message_type_value)):
+			raise ValueError(f"Unkown message type value {message_type_value}")
+
+		return Message.Type(message_type_value)
+
+	@staticmethod
+	def extract_payload_length_from_payload(payload, message_type):
+		'''
+			TODO
+		'''
+		if(len(payload) < Message.PAYLOAD_SIZE_LENGTH):
+			raise ValueError(f"Length of the payload for Message with type {message_type} should be at least {Message.PAYLOAD_SIZE_LENGTH}, not {len(payload)}")
+		payload_length, = struct.unpack(">I", payload)
+
+		if(len(payload) != payload_length):
+			raise ValueError(f"Length of the payload acccording to first four bytes is {payload_length}, but given payload has length {len(payload)}")
+		return payload_length	
+	
+	@staticmethod
+	def create_message_from_buffer(message_type_value, payload=None, payload_length=0):
+		'''
+			TODO
+		'''
+		if(payload is None and payload_length != 0):
+			raise ValueError(f"Given payload is {payload} but payload_length={payload_length}")
+		
+		if(len(payload) != payload_length):
+			raise ValueError(f"Given payload's length is {len(payload)} but payload_length={payload_length}")
+
+		msg = Message()
+		msg.msg_type = Message.convert_int_to_message_type(message_type_value)
+
+		t = Message.Type
+		already_read = 0
+		if(msg.msg_type == t.ERROR):
+			error_code, = struct.unpack_from(">B", payload, already_read)
+			setattr(msg, Message.ERROR_CODE_ATTR_NAME, error_code)
+			already_read += struct.calcsize(">B")
+
+		elif(msg.msg_type == t.CAMERA_LIST):
+			xml_camera_list, = struct.unpack_from(f">{payload_length}s", payload, already_read)
+			setattr(msg, Message.XML_CAMERA_LIST_ATTR_NAME, xml_camera_list.decode('ASCII'))
+			already_read += struct.calcsize(f">{payload_length}s")
+
+		elif(msg.msg_type == t.OPEN_CAMERA):
+			serial_number, = struct.unpack_from(f">{payload_length}s", payload, already_read)
+			setattr(msg, Message.CAMERA_SERIAL_NUMBER_ATTR_NAME, serial_number)
+			already_read += struct.calcsize(f">{payload_length}s")
+
+		elif(msg.msg_type in [t.CLOSE_CAMERA, t.ACK_CAMERA, t.GET_FRAME, t.FRAME, t.START_CONTINUOUS_GRABBING, t.STOP_CONTINUOUS_GRABBING, t.ACK_CONTINUOUS_GRABBING]):
+			camera_id, = struct.unpack_from(">B", payload, already_read)
+			setattr(msg, Message.CAMERA_ID_ATTR_NAME, camera_id)
+			already_read += Message.CAMERA_ID_LENGTH
+
+			if(msg.msg_type in [t.FRAME, t.ACK_CONTINUOUS_GRABBING]):
+				frame_number, = struct.unpack_from(">I", payload, already_read)
+				setattr(msg, Message.FRAME_NUMBER_ATTR_NAME, frame_number)
+				already_read += struct.calcsize(">I")
+
+			if(msg.msg_type == t.FRAME):
+				timestamp, frame_height, frame_width = struct.unpack_from(">QHH", payload, already_read)
+				setattr(msg, Message.FRAME_TIMESTAMP_ATTR_NAME, timestamp)
+				already_read += struct.calcsize(">QHH")
+
+				frame_flatten = struct.unpack_from(f">{frame_height*frame_width}f", payload, already_read)
+				frame = np.array(frame_flatten, dtype=np.float32).reshape(frame_height, frame_width)
+				setattr(msg, Message.FRAME_ATTR_NAME, frame)
+				already_read += struct.calcsize(f"{frame_height*frame_width}f")
+				
+		else:
+			raise ValueError(f"Unknown message type {msg.msg_type}")
+
+		if(already_read != payload_length):
+			raise ValueError(f"Deserialization of the message is finished, but no all bytes in payload were used. "
+				f"payload_length={payload_length}, number of read bytes={already_read}, message type={msg.msg_type}")
+		msg.__buffer = struct.pack(f">BI", message_type_value, payload_length)+payload
+		return msg
+
+	@staticmethod
+	def create_message(message_type, **kwargs):
 		'''
 		Create new message and set its attributes by given values. Also add this values into bytes[] with correct order.
 		'''
-		if("buffer" in kwargs and "msg_type" in kwargs):		
-			raise ValueError("Both `msg_type` and `buffer` was defined. Choose only one!")
-
-		if("buffer" not in kwargs and "msg_type" not in kwargs):		
-			raise ValueError("Neither `msg_type` nor `buffer` was defined.")
-
+		if(not isinstance(message_type, Message.Type)):
+			raise ValueError("Parameter message_type must be type Message.Type")
 		msg = Message()
-		if("buffer" in kwargs):		
-			msg.__buffer = bytes(kwargs['buffer'])
-			msg.msg_type = Message.Type(struct.unpack('B', msg.__buffer)[0])
-			if(msg.msg_type == Message.Type.GET_CAMERAS_RESP):
-				pass
-				# TODO unpack from second byte variable length string
-				# struct.unpack_from("string", ...)
-				#https://stackoverflow.com/questions/3753589/packing-and-unpacking-variable-length-array-string-using-the-struct-module-in-py
+		msg.msg_type = message_type
+		msg.__buffer = struct.pack(">B", msg.msg_type.value)
 
+		payload_content = bytes()
+		t = Message.Type
+		if(msg.msg_type in [t.OK, t.GET_CAMERA_LIST]):
+			pass 
 
-		if("msg_type" in kwargs):
-			msg.msg_type = kwargs['msg_type']
-			if(not isinstance(msg.msg_type, Message.Type)):
-				if(isinstance(msg.msg_type, int)):
-					msg.msg_type = Message.Type(msg.msg_type)
-				else:
-					raise ValueError("Parameter msg_type must be type Message.Type or int")
+		elif(msg.msg_type == t.ERROR):
+			if(Message.ERROR_CODE_ATTR_NAME not in kwargs):
+				raise ValueError(f"Parameter '{Message.ERROR_CODE_ATTR_NAME}' must be given for message with type {msg.msg_type}")
+			setattr(msg, Message.ERROR_CODE_ATTR_NAME, kwargs[Message.ERROR_CODE_ATTR_NAME])
+			payload_content += struct.pack(">B", getattr(msg, Message.ERROR_CODE_ATTR_NAME))
 
-			msg.__buffer = struct.pack("B", msg.msg_type.value)
+		elif(msg.msg_type == t.CAMERA_LIST):
+			if(Message.XML_CAMERA_LIST_ATTR_NAME not in kwargs):
+				raise ValueError(f"Parameter '{Message.XML_CAMERA_LIST_ATTR_NAME}' must be given for message with type {msg.msg_type}")
+			xml = kwargs[Message.XML_CAMERA_LIST_ATTR_NAME]
+			setattr(msg, Message.XML_CAMERA_LIST_ATTR_NAME, xml)
+			xml_encoded = xml.encode('ASCII')
+			payload_content += struct.pack(f">{len(xml_encoded)}s", xml_encoded)
 
+		elif(msg.msg_type == t.OPEN_CAMERA):
+			if(Message.CAMERA_SERIAL_NUMBER_ATTR_NAME not in kwargs):
+				raise ValueError(f"Parameter '{Message.CAMERA_SERIAL_NUMBER_ATTR_NAME}' must be given for message with type {msg.msg_type}")
+			serial_number = kwargs[Message.CAMERA_SERIAL_NUMBER_ATTR_NAME]
+			setattr(msg, Message.CAMERA_SERIAL_NUMBER_ATTR_NAME, serial_number)
+			payload_content += struct.pack(f">{len(serial_number)}s", serial_number)
 
-			# Some messages have additional info that must be withrawn from the kwargs
+		elif(msg.msg_type in [t.CLOSE_CAMERA, t.ACK_CAMERA, t.GET_FRAME, t.FRAME, t.START_CONTINUOUS_GRABBING, t.STOP_CONTINUOUS_GRABBING, t.ACK_CONTINUOUS_GRABBING]):
+			if(Message.CAMERA_ID_ATTR_NAME not in kwargs):
+				raise ValueError(f"Parameter '{Message.CAMERA_ID_ATTR_NAME}' must be given for message with type {msg.msg_type}")
+			setattr(msg, Message.CAMERA_ID_ATTR_NAME, kwargs[Message.CAMERA_ID_ATTR_NAME])
+			payload_content += struct.pack(f">B", kwargs[Message.CAMERA_ID_ATTR_NAME])
+
+			if(msg.msg_type in [t.FRAME, t.ACK_CONTINUOUS_GRABBING]):
+				if(Message.FRAME_NUMBER_ATTR_NAME not in kwargs):
+					raise ValueError(f"Parameter '{Message.FRAME_NUMBER_ATTR_NAME}' must be given for message with type {msg.msg_type}")
+				setattr(msg, Message.FRAME_NUMBER_ATTR_NAME, kwargs[Message.FRAME_NUMBER_ATTR_NAME])
+				payload_content += struct.pack(f">I", kwargs[Message.FRAME_NUMBER_ATTR_NAME])
+
+			if(msg.msg_type == t.FRAME):
+				if(Message.FRAME_TIMESTAMP_ATTR_NAME not in kwargs):
+					raise ValueError(f"Parameter '{Message.FRAME_TIMESTAMP_ATTR_NAME}' must be given for message with type {msg.msg_type}")
+				setattr(msg, Message.FRAME_TIMESTAMP_ATTR_NAME, kwargs[Message.FRAME_TIMESTAMP_ATTR_NAME])
+				payload_content += struct.pack(f">Q", kwargs[Message.FRAME_TIMESTAMP_ATTR_NAME])
+				
+				if(Message.FRAME_ATTR_NAME not in kwargs):
+					raise ValueError(f"Parameter '{Message.FRAME_ATTR_NAME}' must be given for message with type {msg.msg_type}")
+
+				frame = kwargs[Message.FRAME_DATA_ATTR_NAME]
+				if(not isinstance(frame, np.ndarray) or frame.ndim != 2 or frame.dtype != np.float32):
+					raise ValueError(f"Parameter '{Message.FRAME_ATTR_NAME}' must be a numpy array with dimension 2 and dtype np.float32")
+				setattr(msg, Message.FRAME_ATTR_NAME, kwargs[Message.FRAME_ATTR_NAME])
+
+				frame_height, frame_width = frame.shape
+				payload_content += struct.pack(f">HH", frame_height, frame_width)
+				payload_content += struct.pack(f">{frame_height*frame_width}f", frame.flatten())
+
+		if(msg.msg_type in [t.CAMERA_LIST, t.OPEN_CAMERA]):
+			if(len(payload_content) <= 0):
+				raise ValueError(f"Payload for the message {msg.msg_type} cannot be empty")
+			msg.__buffer += struct.pack(f">I", len(payload_content) + Message.PAYLOAD_SIZE_LENGTH)
+
+		msg.__buffer += struct.pack(f">{len(payload_content)}B", *payload_content)
 		return msg
 
 	def __fill_cameras_req(self):
