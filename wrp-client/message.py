@@ -1,5 +1,8 @@
-from enum import Enum
+from enum import Enum, unique
 import struct
+import numpy as np
+import xml.etree.ElementTree as ET
+from camera import Camera
 
 class Message:
 	'''
@@ -8,17 +11,16 @@ class Message:
 	
 	__buffer = bytearray()
 	PAYLOAD_SIZE_LENGTH = 4
-	CAMERA_ID_LENGTH = 1
+	MESSAGE_TYPE_LENGTH = 1
 	
 	ERROR_CODE_ATTR_NAME = 'error_code'
-	CAMERA_ID_ATTR_NAME = 'camera_id'
 	XML_CAMERA_LIST_ATTR_NAME = 'xml_camera_list'
 	CAMERA_SERIAL_NUMBER_ATTR_NAME = 'camera_serial'
 	FRAME_NUMBER_ATTR_NAME = 'frame_number'
 	FRAME_TIMESTAMP_ATTR_NAME = 'frame_timestamp'
 	FRAME_ATTR_NAME = 'frame'
 
-
+	@unique
 	class Type(Enum):
 		INVALID = 0
 		OK = 1
@@ -27,12 +29,11 @@ class Message:
 		CAMERA_LIST = 4
 		OPEN_CAMERA = 5
 		CLOSE_CAMERA = 6
-		ACK_CAMERA = 7
-		GET_FRAME = 8
-		FRAME = 9
-		START_CONTINUOUS_GRABBING = 10
-		STOP_CONTINUOUS_GRABBING = 11
-		ACK_CONTINUOUS_GRABBING = 12
+		GET_FRAME = 7
+		FRAME = 8
+		START_CONTINUOUS_GRABBING = 9
+		STOP_CONTINUOUS_GRABBING = 10
+		ACK_CONTINUOUS_GRABBING = 11
 
 	def __init__(self):
 		pass
@@ -41,7 +42,10 @@ class Message:
 		return self.__buffer
 
 	def __repr__(self):
-		return f"{self.msg_type}({self.msg_type.value}), buffer: {self.__buffer}"
+		if(len(self.__buffer) > 500):
+			return f"{self.msg_type}({self.msg_type.value}), buffer (trimmed): {self.__buffer[:500]}"
+		else:
+			return f"{self.msg_type}({self.msg_type.value}), buffer: {self.__buffer}"
 
 	@staticmethod
 	def is_int_valid_message_type(message_type_value):
@@ -77,13 +81,10 @@ class Message:
 		return payload_length	
 	
 	@staticmethod
-	def create_message_from_buffer(message_type_value, payload=None, payload_length=0):
+	def create_message_from_buffer(message_type_value, payload=bytes(), payload_length=0):
 		'''
 			TODO
 		'''
-		if(payload is None and payload_length != 0):
-			raise ValueError(f"Given payload is {payload} but payload_length={payload_length}")
-		
 		if(len(payload) != payload_length):
 			raise ValueError(f"Given payload's length is {len(payload)} but payload_length={payload_length}")
 
@@ -92,7 +93,10 @@ class Message:
 
 		t = Message.Type
 		already_read = 0
-		if(msg.msg_type == t.ERROR):
+		if(msg.msg_type in [t.OK, t.GET_CAMERA_LIST]):
+			pass 
+
+		elif(msg.msg_type == t.ERROR):
 			error_code, = struct.unpack_from(">B", payload, already_read)
 			setattr(msg, Message.ERROR_CODE_ATTR_NAME, error_code)
 			already_read += struct.calcsize(">B")
@@ -107,11 +111,7 @@ class Message:
 			setattr(msg, Message.CAMERA_SERIAL_NUMBER_ATTR_NAME, serial_number)
 			already_read += struct.calcsize(f">{payload_length}s")
 
-		elif(msg.msg_type in [t.CLOSE_CAMERA, t.ACK_CAMERA, t.GET_FRAME, t.FRAME, t.START_CONTINUOUS_GRABBING, t.STOP_CONTINUOUS_GRABBING, t.ACK_CONTINUOUS_GRABBING]):
-			camera_id, = struct.unpack_from(">B", payload, already_read)
-			setattr(msg, Message.CAMERA_ID_ATTR_NAME, camera_id)
-			already_read += Message.CAMERA_ID_LENGTH
-
+		elif(msg.msg_type in [t.FRAME, t.ACK_CONTINUOUS_GRABBING]):
 			if(msg.msg_type in [t.FRAME, t.ACK_CONTINUOUS_GRABBING]):
 				frame_number, = struct.unpack_from(">I", payload, already_read)
 				setattr(msg, Message.FRAME_NUMBER_ATTR_NAME, frame_number)
@@ -149,12 +149,12 @@ class Message:
 
 		payload_content = bytes()
 		t = Message.Type
-		if(msg.msg_type in [t.OK, t.GET_CAMERA_LIST]):
+		if(msg.msg_type in [t.OK, t.GET_CAMERA_LIST, t.CLOSE_CAMERA, t.GET_FRAME, t.START_CONTINUOUS_GRABBING, t.STOP_CONTINUOUS_GRABBING]):
 			pass 
 
 		elif(msg.msg_type == t.ERROR):
 			if(Message.ERROR_CODE_ATTR_NAME not in kwargs):
-				raise ValueError(f"Parameter '{Message.ERROR_CODE_ATTR_NAME}' must be given for message with type {msg.msg_type}")
+				raise ValueError(f"Parameter '{Message.ERROR_CODE_ATTR_NAME}'	 must be given for message with type {msg.msg_type}")
 			setattr(msg, Message.ERROR_CODE_ATTR_NAME, kwargs[Message.ERROR_CODE_ATTR_NAME])
 			payload_content += struct.pack(">B", getattr(msg, Message.ERROR_CODE_ATTR_NAME))
 
@@ -171,14 +171,10 @@ class Message:
 				raise ValueError(f"Parameter '{Message.CAMERA_SERIAL_NUMBER_ATTR_NAME}' must be given for message with type {msg.msg_type}")
 			serial_number = kwargs[Message.CAMERA_SERIAL_NUMBER_ATTR_NAME]
 			setattr(msg, Message.CAMERA_SERIAL_NUMBER_ATTR_NAME, serial_number)
-			payload_content += struct.pack(f">{len(serial_number)}s", serial_number)
+			serial_number_encoded = serial_number.encode('ASCII')
+			payload_content += struct.pack(f">{len(serial_number_encoded)}s", serial_number_encoded)
 
-		elif(msg.msg_type in [t.CLOSE_CAMERA, t.ACK_CAMERA, t.GET_FRAME, t.FRAME, t.START_CONTINUOUS_GRABBING, t.STOP_CONTINUOUS_GRABBING, t.ACK_CONTINUOUS_GRABBING]):
-			if(Message.CAMERA_ID_ATTR_NAME not in kwargs):
-				raise ValueError(f"Parameter '{Message.CAMERA_ID_ATTR_NAME}' must be given for message with type {msg.msg_type}")
-			setattr(msg, Message.CAMERA_ID_ATTR_NAME, kwargs[Message.CAMERA_ID_ATTR_NAME])
-			payload_content += struct.pack(f">B", kwargs[Message.CAMERA_ID_ATTR_NAME])
-
+		elif(msg.msg_type in [t.FRAME, t.ACK_CONTINUOUS_GRABBING]):
 			if(msg.msg_type in [t.FRAME, t.ACK_CONTINUOUS_GRABBING]):
 				if(Message.FRAME_NUMBER_ATTR_NAME not in kwargs):
 					raise ValueError(f"Parameter '{Message.FRAME_NUMBER_ATTR_NAME}' must be given for message with type {msg.msg_type}")
@@ -203,14 +199,46 @@ class Message:
 				payload_content += struct.pack(f">HH", frame_height, frame_width)
 				payload_content += struct.pack(f">{frame_height*frame_width}f", frame.flatten())
 
-		if(msg.msg_type in [t.CAMERA_LIST, t.OPEN_CAMERA]):
-			if(len(payload_content) <= 0):
-				raise ValueError(f"Payload for the message {msg.msg_type} cannot be empty")
-			msg.__buffer += struct.pack(f">I", len(payload_content) + Message.PAYLOAD_SIZE_LENGTH)
+		else:
+			raise ValueError(f"Unknown message type {msg.msg_type}")
 
+		msg.__buffer += struct.pack(f">I", len(payload_content))
 		msg.__buffer += struct.pack(f">{len(payload_content)}B", *payload_content)
 		return msg
 
-	def __fill_cameras_req(self):
-		pass
+	@staticmethod
+	def xml_to_camera_list(connector, xml):
+		try:
+			root = ET.fromstring(xml)
+		except ParseError:
+			raise ValueError("Received XML could not be parsed")
+			# TODO
+			pass
+
+		if(root.tag != "Cameras"):
+			raise ValueError("Received XML does not have root element 'Cameras'")
+
+		camera_list = []
+		for camera_el in root:
+			if(camera_el.tag != "Camera"):
+				raise ValueError(f"Received XML contains unknown element {camera_el.tag} (expected was 'Camera')")
+		
+			camera_instance = Camera(connector)
+			for key, (attr_name, attr_dtype) in Camera.ATTRIBUTES.items():
+				try:
+					attr_value = camera_el.attrib[key]
+				except KeyError:
+					raise ValueError(f"Received XML does not contain mandatory attribute {key} for element {camera_el.tag}")
+
+				try:
+					attr_value = attr_dtype(attr_value)
+				except ValueError:
+					raise ValueError(f"Attribute {key} for element {camera_el.tag} could not be converted to datatype {attr_dtype}")
+
+				setattr(camera_instance, attr_name, attr_value)
+
+			camera_list.append(camera_instance)
+
+		return camera_list
+
 

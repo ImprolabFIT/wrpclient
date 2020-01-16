@@ -27,12 +27,13 @@ class Driver:
 		await self.__writer.drain()
 
 	async def receive_message(self):
-		message_type_value, payload_length = struct.unpack(">BI", await self.__reader.readexactly(Message.CAMERA_ID_LENGTH + Message.PAYLOAD_SIZE_LENGTH))
+		message_type_value, payload_length = struct.unpack(">BI", await self.__reader.readexactly(Message.MESSAGE_TYPE_LENGTH + Message.PAYLOAD_SIZE_LENGTH))
 		if(payload_length > 0):
 			payload = await self.__reader.readexactly(payload_length)
 		else:
-			payload = None
+			payload = bytes()
 		response = Message.create_message_from_buffer(message_type_value=message_type_value, payload=payload, payload_length=payload_length)
 		print("Received message:", response)
+
 		return response
 		

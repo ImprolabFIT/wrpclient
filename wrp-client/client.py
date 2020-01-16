@@ -20,7 +20,7 @@ class Client:
 		return self.__connector.is_connected()
 
 	def get_cameras(self, timeout=DEFAULT_TIMEOUT):
-		self.__connector.get_cameras(timeout)
+		return self.__connector.get_cameras(timeout)
 
 	def get_camera(self, serial_number, timeout=DEFAULT_TIMEOUT):
 		try:
