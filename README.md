@@ -77,27 +77,26 @@ Black arrows are events trigggered by the client, red ones comes from the server
 Message is composed of header, that specifies message type, payload length and payload. 
 Messages are:
 
-|	Type						|	Type value	|	Payload size	|	Payload													|
-|	----						|	-------		|	--------------	|	------- 												|
-| 	INVALID						|	0			|	0				|	-														|
-|	OK							|	1			|	0				|		-													|
-|	ERROR						|	2			|	1				|	ERROR_CODE												|
-|	GET_CAMERA_LIST				|	3			|	0				|	-														|
-|	CAMERA_LIST					|	4			|	variable		|	XML with listed cameras									|
-|	OPEN_CAMERA					|	5			|	variable		|	Serial no. of camera									|
-|	CLOSE_CAMERA				|	6			|	1				|	Camera ID												|
-|	ACK_CAMERA					|	7			|	1				|	Generated camera ID										|
-|	GET_FRAME					|	8			|	1				|	Camera ID												|
-|	FRAME						|	9			|	variable		|	Camera ID, Frame no., Timestamp, Height, Width, Frame	|
-|	START_CONTINUOUS_GRABBING	|	10			|	1				|	Camera ID												|
-|	STOP_CONTINUOUS_GRABBING	|	11			|	1				|	Camera ID												|
-|	ACK_CONTINUOUS_GRABBING		|	12			|	5				|	Camera ID, Frame no. 									|
+|	Type						|	Type value	|	Payload size	|	Payload										|
+|	----						|	-------		|	--------------	|	------- 									|
+| 	INVALID						|	0			|	0				|	-											|
+|	OK							|	1			|	0				|	-											|
+|	ERROR						|	2			|	1				|	Error code									|
+|	GET_CAMERA_LIST				|	3			|	0				|	-											|
+|	CAMERA_LIST					|	4			|	variable		|	XML with listed cameras						|
+|	OPEN_CAMERA					|	5			|	variable		|	Serial no. of camera						|
+|	CLOSE_CAMERA				|	6			|	0				|	-											|
+|	GET_FRAME					|	7			|	0				|	-											|
+|	FRAME						|	8			|	variable		|	Frame no., Timestamp, Height, Width, Frame	|
+|	START_CONTINUOUS_GRABBING	|	9			|	0				|	-											|
+|	STOP_CONTINUOUS_GRABBING	|	10			|	0				|	-											|
+|	ACK_CONTINUOUS_GRABBING		|	11			|	5				|	Frame no. 									|	
 
 Payload content datatypes:
 
 |	Name						|	Datatype				|
 |	----						|	-------					|
-|	ERROR_CODE					|	uint8					|
+|	Error code					|	uint8					|
 |	XML with listed cameras		|	string					|
 |	Serial no. of cameras		|	string					|
 |	Camera ID					|	uint8					|
@@ -115,4 +114,4 @@ Error codes are:
 |	CAMERA_DISCONNECTED	|	1			|	TODO		|
 |	WRONG_CAMERA_ID		|	2			|	TODO		|
 
-
+	
