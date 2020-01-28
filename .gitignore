@@ -1,0 +1,5 @@
+# Specify filepatterns you want git to ignore.
+*.log
+docs/_build/
+*__pycache__
+*.ipynb_checkpoints
