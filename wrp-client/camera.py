@@ -1,6 +1,8 @@
 class Camera:
 	'''
-	TODO add docstring
+	Represents camera with corresponding hardware on the server-side of application. 
+	Can be used to get frame or start continuous shot. 
+	Instances of this class should not be created by the user directly (camera = Camera()) but they should be obtained using client.get_cameras().
 	'''
 
 	DEFAULT_TIMEOUT = 10
@@ -15,8 +17,6 @@ class Camera:
 		'ManufacturerInfo': ('manufacturer_info', str), 
 		'VendorName': ('vendor_name', str)
 		}
-
-	__connector = None # (Instance of WRP Connector)
 
 	def __init__(self, connector):
 		self.__connector = connector
@@ -45,13 +45,10 @@ class Camera:
 	def get_frame(self, timeout=DEFAULT_TIMEOUT):
 		return self.__connector.get_frame(self.serial_number, timeout)
 
-	def start_continuous_shot(self, callback):
-		self.__connector.start_continuous_shot(callback)				
+	def start_continuous_shot(self, callback, timeout=DEFAULT_TIMEOUT):
+		return self.__connector.start_continuous_shot(self.serial_number, callback, timeout)				
 
-	def stop_continous_shot(self):
-		pass
-
-	def is_grabbing(self):
-		pass
+	def stop_continuous_shot(self, timeout=DEFAULT_TIMEOUT):
+		return self.__connector.stop_continuous_shot(self.serial_number, timeout)				
 
 		

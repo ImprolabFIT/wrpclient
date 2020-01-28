@@ -34,6 +34,5 @@ class Driver:
 			payload = bytes()
 		response = Message.create_message_from_buffer(message_type_value=message_type_value, payload=payload, payload_length=payload_length)
 		print("Received message:", response)
-
 		return response
 		
