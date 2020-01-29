@@ -26,23 +26,17 @@ class WRPConnector:
 		self.__continuous_last_message = None
 			
 	def connect(self, ip_address, port, timeout):
-		# Kličko kvůli nest_asyncio neboť asyncio samo o sobě nepovoluje volat run_until_complete v již běžícím event_loopu
-		if(self.__state != WRPConnector.State.IDLE):
-			raise ValueError("Client is already connected")
-
 		self.__event_loop.run_until_complete(
 			asyncio.wait_for(
-				self.__connect(ip_address, port), 
+				self.connect_async(ip_address, port), 
 				timeout=timeout
 			)
 		)
-		self.__state = WRPConnector.State.CONNECTED
 
 	def disconnect(self, timeout):
-		# Kličko kvůli nest_asyncio neboť asyncio samo o sobě nepovoluje volat run_until_complete v již běžícím event_loopu
 		self.__event_loop.run_until_complete(
 			asyncio.wait_for(
-				self.__disconnect(), 
+				self.disconnect_async(), 
 				timeout=timeout
 			)
 		)
@@ -53,7 +47,7 @@ class WRPConnector:
 	def get_cameras(self, timeout):
 		return self.__event_loop.run_until_complete(
 			asyncio.wait_for(
-				self.__get_cameras(), 
+				self.get_cameras_async(), 
 				timeout=timeout
 			)
 		)
@@ -61,7 +55,7 @@ class WRPConnector:
 	def open_camera(self, camera_serial_number, timeout):
 		self.__event_loop.run_until_complete(
 			asyncio.wait_for(
-				self.__open_camera(camera_serial_number), 
+				self.open_camera_async(camera_serial_number), 
 				timeout=timeout
 			)
 		)
@@ -72,7 +66,7 @@ class WRPConnector:
 	def close_camera(self, camera_serial_number, timeout):
 		self.__event_loop.run_until_complete(
 			asyncio.wait_for(
-				self.__close_camera(camera_serial_number), 
+				self.close_camera_async(camera_serial_number), 
 				timeout=timeout
 			)
 		)
@@ -80,20 +74,15 @@ class WRPConnector:
 	def get_frame(self, camera_serial_number, timeout):
 		return self.__event_loop.run_until_complete(
 			asyncio.wait_for(
-				self.__get_frame(camera_serial_number), 
+				self.get_frame_async(camera_serial_number), 
 				timeout=timeout
 			)
 		)
 
 	def start_continuous_shot(self, camera_serial_number, callback, timeout):
-		if(not callable(callback)):
-			raise ValueError("Given callback must be a callable")
-		self.__continuous_callback = callback
-		print("Creating __continuous_thread")
-		self.__continuous_thread = threading.Thread(target=self.__handle_continuous_shot_state, args=(self.__event_loop,))
 		self.__event_loop.run_until_complete(
 			asyncio.wait_for(
-				self.__start_continuous_shot(camera_serial_number), 
+				self.start_continuous_shot_async(camera_serial_number), 
 				timeout=timeout
 			)
 		)
@@ -101,23 +90,25 @@ class WRPConnector:
 	def stop_continuous_shot(self, camera_serial_number, timeout):
 		self.__event_loop.run_until_complete(
 			asyncio.wait_for(
-				self.__stop_continuous_shot(camera_serial_number), 
+				self.stop_continuous_shot_async(camera_serial_number), 
 				timeout=timeout
 			)
 		)
-		self.__continuous_thread = None
-		self.__continuous_callback = None
-		self.__last_continuous_message = None
-
-	async def __connect(self, ip_address, port):
+		
+	async def connect_async(self, ip_address, port):
+		# Kličko kvůli nest_asyncio neboť asyncio samo o sobě nepovoluje volat run_until_complete v již běžícím event_loopu
+		if(self.__state != WRPConnector.State.IDLE):
+			raise ValueError("Client is already connected")
 		await self.__driver.connect(ip_address, port)
+		self.__state = WRPConnector.State.CONNECTED
 
-	async def __disconnect(self):
+
+	async def disconnect_async(self):
 		await self.__driver.disconnect()
 		self.__state = WRPConnector.State.IDLE
 		self.__active_camera = None
 
-	async def __get_cameras(self):
+	async def get_cameras_async(self):
 		if(self.__state == WRPConnector.State.IDLE):
 			raise ValueError("Client is not connected. Please call client.connect(IP_ADRRESS, PORT) first")
 		if(self.__state in [WRPConnector.State.CAMERA_SELECTED, WRPConnector.State.CONTINUOUS_GRABBING]):
@@ -137,7 +128,7 @@ class WRPConnector:
 			raise ConnectionResetError(f"Something bad is happening, server responded with unexpected message {response.msg_type} (expected was {Message.Type.CAMERA_LIST})")
 		return Message.xml_to_camera_list(self, getattr(response, Message.XML_CAMERA_LIST_ATTR_NAME))
 
-	async def __open_camera(self, camera_serial_number):
+	async def open_camera_async(self, camera_serial_number):
 		if(self.__state == WRPConnector.State.IDLE):
 			raise ValueError("Client is not connected. Please call client.connect(IP_ADRRESS, PORT) first")
 		
@@ -160,7 +151,7 @@ class WRPConnector:
 		else:
 			raise ValueError(f"Server responded with unexpected message {response.msg_type}")
 
-	async def __close_camera(self, camera_serial_number):
+	async def close_camera_async(self, camera_serial_number):
 		if(self.__state == WRPConnector.State.IDLE):
 			raise ValueError("Client is not connected. Please call client.connect(IP_ADRRESS, PORT) first")
 		if(self.__state == WRPConnector.State.CONTINUOUS_GRABBING):
@@ -183,7 +174,7 @@ class WRPConnector:
 		else:
 			raise ValueError(f"Server responded with unexpected message {response.msg_type}")
 
-	async def __get_frame(self, camera_serial_number):
+	async def get_frame_async(self, camera_serial_number):
 		if(self.__state == WRPConnector.State.IDLE):
 			raise ValueError("Client is not connected. Please call client.connect(IP_ADRRESS, PORT) first")
 		if(self.__state == WRPConnector.State.CONTINUOUS_GRABBING):
@@ -210,7 +201,13 @@ class WRPConnector:
 			raise ValueError(f"Server responded with unexpected message {response.msg_type}")
 
 	
-	async def __start_continuous_shot(self, camera_serial_number):
+	async def start_continuous_shot_async(self, camera_serial_number):
+		if(not callable(callback)):
+			raise ValueError("Given callback must be a callable")
+		self.__continuous_callback = callback
+		print("Creating __continuous_thread")
+		self.__continuous_thread = threading.Thread(target=self.__handle_continuous_shot_state, args=(self.__event_loop,))
+		
 		if(self.__state == WRPConnector.State.IDLE):
 			raise ValueError("Client is not connected. Please call client.connect(IP_ADRRESS, PORT) first")
 		if(self.__state == WRPConnector.State.CONTINUOUS_GRABBING):
@@ -235,7 +232,7 @@ class WRPConnector:
 		print("Starting __continuous_thread")
 		self.__continuous_thread.start()
 
-	async def __stop_continuous_shot(self, camera_serial_number):
+	async def stop_continuous_shot_async(self, camera_serial_number):
 		if(self.__state == WRPConnector.State.IDLE):
 			raise ValueError("Client is not connected. Please call client.connect(IP_ADRRESS, PORT) first")
 		if(self.__state == WRPConnector.State.CAMERA_SELECTED):
@@ -265,6 +262,9 @@ class WRPConnector:
 		else:
 			raise ValueError(f"Server has not responded to STOP_CONTINUOUS_GRABBING message")
 
+		self.__continuous_thread = None
+		self.__continuous_callback = None
+		self.__last_continuous_message = None
 
 	def __handle_continuous_shot_state(self, event_loop):
 		print("Entering to __handle_continuous_shot_state")
