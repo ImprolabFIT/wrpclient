@@ -5,10 +5,11 @@ class Client:
 	TODO add docstring
 	'''
 	DEFAULT_TIMEOUT = 10
+	DEFAULT_PORT = 8754
 	def __init__(self):
 		self.__connector = WRPConnector()
 
-	def connect(self, ip_address, port, timeout=DEFAULT_TIMEOUT):		
+	def connect(self, ip_address, port=DEFAULT_PORT, timeout=DEFAULT_TIMEOUT):		
 		self.__connector.connect(ip_address, port, timeout)
 
 	def disconnect(self, timeout=DEFAULT_TIMEOUT):
@@ -24,7 +25,7 @@ class Client:
 		try:
 			return [c for c in self.get_cameras(timeout) if c.serial_number == serial_number][0]
 		except IndexError:
-			raise CameraNotFound()
+			raise ValueError(f"No camera with serial number {serial_number} is available")
 
 	async def connect_async(self, ip_address, port):		
 		return self.__connector.connect_async(ip_address, port)
@@ -35,7 +36,7 @@ class Client:
 	async def get_cameras_async(self):
 		return self.__connector.get_cameras_async()
 
-	async def get_camera(self, serial_number):
+	async def get_camera_async(self, serial_number):
 		try:
 			return [c for c in await self.get_cameras_async() if c.serial_number == serial_number][0]
 		except IndexError:
