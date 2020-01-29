@@ -1,6 +1,6 @@
-from message import Message
 import struct
 import asyncio
+from .message import Message
 
 class Driver:
 	'''

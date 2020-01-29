@@ -1,4 +1,7 @@
 # Specify filepatterns you want git to ignore.
+build
+dist
+wrpclient.egg-info
 *.log
 docs/_build/
 *__pycache__

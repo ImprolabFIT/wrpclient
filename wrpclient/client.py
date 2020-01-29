@@ -1,4 +1,4 @@
-from wrp_connector import WRPConnector
+from .wrp_connector import WRPConnector
 
 class Client:
 	'''

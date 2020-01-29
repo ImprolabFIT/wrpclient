@@ -1,8 +1,8 @@
 from enum import Enum, unique
-from driver import Driver
-from message import Message
 import threading
 import asyncio
+from .driver import Driver
+from .message import Message
 
 class WRPConnector:
 	'''

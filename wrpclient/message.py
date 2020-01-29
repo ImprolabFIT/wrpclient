@@ -2,7 +2,7 @@ from enum import Enum, unique
 import struct
 import numpy as np
 import xml.etree.ElementTree as ET
-from camera import Camera
+from .camera import Camera
 
 class Message:
 	'''
