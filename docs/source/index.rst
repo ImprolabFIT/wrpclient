@@ -10,23 +10,23 @@ Welcome to the WRP Client's documentation! WRP Client and `WRP Server <https://g
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Classes:
 
    classes/client
+   classes/camera
+   classes/message
+   classes/wrp_connector
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Protocols:
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
+   wrp
 
 Installation
 ----------------------
 
-The simplest way to install WRP client is from the pypi:
+The simplest way to install :ref:`WRP <WRP Definition>` client is from the pypi:
 
 .. code-block:: bash
 

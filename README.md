@@ -108,13 +108,11 @@ Payload content datatypes:
 
 Error codes are:
 
-|	Code					|	Code value	|	Description	|
-|	----					|	---------	|	-----------	|
-|	UNEXPECTED_MESSAGE		|	0			|	TODO		|
-|	CAMERA_NOT_FOUND		|	1			|	TODO		|
-|	CAMERA_NOT_RESPONDING	|	2			|	TODO		|
-|	CAMERA_NOT_OPEN			|	3			|	TODO		|
-|	CAMERA_NOT_CONNECTED	|	4			|	TODO		|
-|	CAMERA_NOT_ACQUIRING	|	5			|	TODO		|
-
-	
+|	Code					|	Code value	|
+|	----					|	---------	|
+|	UNEXPECTED_MESSAGE		|	0			|
+|	CAMERA_NOT_FOUND		|	1			|
+|	CAMERA_NOT_RESPONDING	|	2			|
+|	CAMERA_NOT_OPEN			|	3			|
+|	CAMERA_NOT_CONNECTED	|	4			|
+|	CAMERA_NOT_ACQUIRING	|	5			|

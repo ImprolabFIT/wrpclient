@@ -6,13 +6,12 @@ from .camera import Camera
 
 class Message:
 	'''
-	TODO add docstring
+	Structure that implements WRP message and is used for passing all the information at once  
 	'''
 	
-	__buffer = bytearray()
 	PAYLOAD_SIZE_LENGTH = 4
 	MESSAGE_TYPE_LENGTH = 1
-	
+	 
 	ERROR_CODE_ATTR_NAME = 'error_code'
 	XML_CAMERA_LIST_ATTR_NAME = 'xml_camera_list'
 	CAMERA_SERIAL_NUMBER_ATTR_NAME = 'camera_serial'
@@ -36,9 +35,20 @@ class Message:
 		ACK_CONTINUOUS_GRABBING = 11
 
 	def __init__(self):
-		pass
+		self.__buffer = bytearray()
 
 	def encode(self):
+		'''
+		Encode message along its attributes (message type, payload etc.) to bytearray 
+
+		**Params**
+		
+		None
+
+		**Return**
+		
+		bytearray containing encoded message
+		'''
 		return self.__buffer
 
 	def __repr__(self):
@@ -50,14 +60,31 @@ class Message:
 	@staticmethod
 	def is_int_valid_message_type(message_type_value):
 		'''
-			TODO
+		Static method that checks if a given integer represents valid message type 
+
+		**Params**
+		
+		* message_type_value: int
+
+		**Return**
+		
+		bool
 		'''
 		return message_type_value in [t.value for t in Message.Type if t.name != "INVALID"]
 
 	@staticmethod
 	def convert_int_to_message_type(message_type_value):
 		'''
-			TODO
+		Static method that converts a given integer to the Message.Type enum 
+		`ValueError exception <https://docs.python.org/3/library/exceptions.html#ValueError>`_  when a given integer is not associated with any Message.Type.
+
+		**Params**
+		
+		* message_type_value: int
+
+		**Return**
+		
+		Message.Type enum
 		'''
 		if(not isinstance(message_type_value, int)):
 			raise ValueError("Parameter message_type_value must be int")
@@ -67,23 +94,31 @@ class Message:
 
 		return Message.Type(message_type_value)
 
-	@staticmethod
-	def extract_payload_length_from_payload(payload, message_type):
-		'''
-			TODO
-		'''
-		if(len(payload) < Message.PAYLOAD_SIZE_LENGTH):
-			raise ValueError(f"Length of the payload for Message with type {message_type} should be at least {Message.PAYLOAD_SIZE_LENGTH}, not {len(payload)}")
-		payload_length, = struct.unpack(">I", payload)
-
-		if(len(payload) != payload_length):
-			raise ValueError(f"Length of the payload acccording to first four bytes is {payload_length}, but given payload has length {len(payload)}")
-		return payload_length	
+#	@staticmethod
+#	def extract_payload_length_from_payload(payload, message_type):
+#		if(len(payload) < Message.PAYLOAD_SIZE_LENGTH):
+#			raise ValueError(f"Length of the payload for Message with type {message_type} should be at least {Message.PAYLOAD_SIZE_LENGTH}, not {len(payload)}")
+#		payload_length, = struct.unpack(">I", payload)
+#
+#		if(len(payload) != payload_length):
+#			raise ValueError(f"Length of the payload acccording to first four bytes is {payload_length}, but given payload has length {len(payload)}")
+#		return payload_length	
 	
 	@staticmethod
 	def create_message_from_buffer(message_type_value, payload=bytes(), payload_length=0):
 		'''
-			TODO
+		Static method that checks if the given message type and payload extracted from a socket correct and decompose it to attributes specific for each message type
+		`ValueError exception <https://docs.python.org/3/library/exceptions.html#ValueError>`_  is raised when given payload's length and payload_length does not match according to WRP.
+
+		**Params**
+		
+		* message_type_value: int, code of the message type
+		* payload: bytes, extracted from the socket
+		* payload_length: int, length of the payload according to received bytes from the socket
+
+		**Return**
+		
+		instance of :class:`Message` 
 		'''
 		if(len(payload) != payload_length):
 			raise ValueError(f"Given payload's length is {len(payload)} but payload_length={payload_length}")
@@ -139,7 +174,17 @@ class Message:
 	@staticmethod
 	def create_message(message_type, **kwargs):
 		'''
-		Create new message and set its attributes by given values. Also add this values into bytes[] with correct order.
+		Static method that creates new message and sets its attributes by given values. Also add this values into bytes[] with correct order.
+		`ValueError exception <https://docs.python.org/3/library/exceptions.html#ValueError>`_  is raised message type and other attributes does not match according to WRP.
+
+		**Params**
+		
+		* message_type: Message.Type
+		* kwargs: dict that should contain values depending on the type of the message
+
+		**Return**
+		
+		instance of :class:`Message` 
 		'''
 		if(not isinstance(message_type, Message.Type)):
 			raise ValueError("Parameter message_type must be type Message.Type")
@@ -208,12 +253,23 @@ class Message:
 
 	@staticmethod
 	def xml_to_camera_list(connector, xml):
+		'''
+		Static method that convert XML received in CAMERA_LIST message to the list of instances of cameras.
+		`ValueError exception <https://docs.python.org/3/library/exceptions.html#ValueError>`_  is raised when XML is not valid according to WRP.
+
+		**Params**
+		
+		* connector: WRPConnector that will be used by the camera to communicate with the server 
+		* xml: str, received from the socket
+
+		**Return**
+		
+		list of instances of :class:`Camera` 
+		'''
 		try:
 			root = ET.fromstring(xml)
 		except ParseError:
 			raise ValueError("Received XML could not be parsed")
-			# TODO
-			pass
 
 		if(root.tag != "Cameras"):
 			raise ValueError("Received XML does not have root element 'Cameras'")
