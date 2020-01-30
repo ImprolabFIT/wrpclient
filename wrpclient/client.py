@@ -58,7 +58,6 @@ class Client:
 
 	def get_cameras(self, timeout=DEFAULT_TIMEOUT):
 		'''
-		
 		Get list of all cameras connected to the server. First client must be connected to the server. 
 		If he is not in the connected state, `ValueError exception <https://docs.python.org/3/library/exceptions.html#ValueError>`_  is raised.
 		
@@ -75,7 +74,6 @@ class Client:
 
 	def get_camera(self, serial_number, timeout=DEFAULT_TIMEOUT):
 		'''
-		
 		Get camera with the given serial number. First client must be connected to the server. 
 		If he is not in the connected state, `ValueError exception <https://docs.python.org/3/library/exceptions.html#ValueError>`_  is raised.
 		If there is no camera with the given serial number available, `ValueError exception <https://docs.python.org/3/library/exceptions.html#ValueError>`_ is also raised.
@@ -86,7 +84,7 @@ class Client:
 
 		**Return**
 		
-		Instance of :class:`Camera` 
+		instance of :class:`Camera` 
 		'''
 		try:
 			return [c for c in self.get_cameras(timeout) if c.serial_number == serial_number][0]
@@ -153,7 +151,7 @@ class Client:
 
 		**Return**
 		
-		Instance of :class:`Camera` 
+		instance of :class:`Camera` 
 		'''
 		try:
 			return [c for c in await self.get_cameras_async() if c.serial_number == serial_number][0]
