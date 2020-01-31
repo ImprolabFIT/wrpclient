@@ -81,7 +81,7 @@ You can also ask camera for the continuous stream of frames:
 
 	my_camera.stop_continuous_shot(callback)
 
-If you want to use the API in IPython enviroment (most common are Jupyter notebooks), you have to install `Nest asyncio <https://pypi.org/project/nest-asyncio/>` and run the following code before using wrpclient:
+If you want to use the API in IPython enviroment (most common are Jupyter notebooks), you have to install `Nest asyncio <https://pypi.org/project/nest-asyncio/>`_ and run the following code before using wrpclient:
 
 .. code-block:: python
 
