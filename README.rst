@@ -8,25 +8,10 @@ WRP Client - Workswell Remote Protocol Client
 
 Welcome to the WRP Client's documentation! WRP Client and `WRP Server <https://github.com/Kasape/wrp-server/>`_ are two parts of a driver that allows to connect to the `Workswell InfraRed Camera <https://www.workswell-thermal-camera.com/workswell-infrared-camera-wic/>`_ using Python. This repository contains the client part, that is written in Python. The second part, `WRP Server <https://github.com/Kasape/wrp-server/>`_, is written in C# because the Workswell company provides and supports access to the cameras only through their C# SDK and not throught any other language. 
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Classes:
-
-   classes/client
-   classes/camera
-   classes/message
-   classes/wrp_connector
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Protocols:
-
-   wrp
-
 Installation
 ----------------------
 
-The simplest way to install :ref:`WRP <WRP Definition>` client is from the pypi:
+The simplest way to install WRP client is from the pypi:
 
 .. code-block:: bash
 
