@@ -148,7 +148,7 @@ class Camera:
 		
 		None 
 		'''
-		return self.__connector.open_camera_async(self.serial_number)
+		return await self.__connector.open_camera_async(self.serial_number)
 
 	async def close_async(self):
 		'''
@@ -165,7 +165,7 @@ class Camera:
 		
 		None 
 		'''
-		return self.__connector.close_camera_async(self.serial_number)
+		return await self.__connector.close_camera_async(self.serial_number)
 
 	async def get_frame_async(self):
 		'''
@@ -182,7 +182,7 @@ class Camera:
 		
 		2-dimensional numpy matrix with dtype float32 containing temperature values in °C 
 		'''
-		return self.__connector.get_frame(self.serial_number)
+		return await self.__connector.get_frame_async(self.serial_number)
 
 	async def start_continuous_shot_async(self, callback):
 		'''
@@ -199,7 +199,7 @@ class Camera:
 	
 		None	
 		'''
-		return self.__connector.start_continuous_shot(self.serial_number, callback)				
+		return await self.__connector.start_continuous_shot(self.serial_number, callback)				
 
 	async def stop_continuous_shot_async(self):
 		'''
@@ -216,7 +216,7 @@ class Camera:
 	
 		None	
 		'''
-		return self.__connector.stop_continuous_shot(self.serial_number)				
+		return await self.__connector.stop_continuous_shot(self.serial_number)				
 
 
 

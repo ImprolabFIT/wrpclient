@@ -3,9 +3,6 @@ import asyncio
 from .message import Message
 
 class Driver:
-	'''
-	TODO add docstring
-	'''
 	__reader = None
 	__writer = None
 	__event_loop = None
@@ -22,7 +19,6 @@ class Driver:
 		self.__reader = None
 
 	async def send_message(self, message):
-		print("Message to send:", message)
 		self.__writer.write(message.encode())
 		await self.__writer.drain()
 
@@ -33,6 +29,5 @@ class Driver:
 		else:
 			payload = bytes()
 		response = Message.create_message_from_buffer(message_type_value=message_type_value, payload=payload, payload_length=payload_length)
-		print("Received message:", response)
 		return response
 		

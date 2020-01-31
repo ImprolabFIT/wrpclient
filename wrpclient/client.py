@@ -105,7 +105,7 @@ class Client:
 		
 		None
 		'''		
-		return self.__connector.connect_async(ip_address, port)
+		return await self.__connector.connect_async(ip_address, port)
 
 	async def disconnect_async(self):
 		'''
@@ -120,7 +120,7 @@ class Client:
 		
 		None
 		'''	
-		return self.__connector.disconnect_async()
+		return await self.__connector.disconnect_async()
 
 	async def get_cameras_async(self):
 		'''
@@ -136,7 +136,7 @@ class Client:
 		
 		list of instances of :class:`Camera` 
 		'''
-		return self.__connector.get_cameras_async()
+		return await self.__connector.get_cameras_async()
 
 	async def get_camera_async(self, serial_number):
 		'''

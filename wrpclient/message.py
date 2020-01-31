@@ -143,7 +143,7 @@ class Message:
 
 		elif(msg.msg_type == t.OPEN_CAMERA):
 			serial_number, = struct.unpack_from(f">{payload_length}s", payload, already_read)
-			setattr(msg, Message.CAMERA_SERIAL_NUMBER_ATTR_NAME, serial_number)
+			setattr(msg, Message.CAMERA_SERIAL_NUMBER_ATTR_NAME, serial_number.decode('ASCII'))
 			already_read += struct.calcsize(f">{payload_length}s")
 
 		elif(msg.msg_type in [t.FRAME, t.ACK_CONTINUOUS_GRABBING]):
@@ -235,14 +235,14 @@ class Message:
 				if(Message.FRAME_ATTR_NAME not in kwargs):
 					raise ValueError(f"Parameter '{Message.FRAME_ATTR_NAME}' must be given for message with type {msg.msg_type}")
 
-				frame = kwargs[Message.FRAME_DATA_ATTR_NAME]
+				frame = kwargs[Message.FRAME_ATTR_NAME]
 				if(not isinstance(frame, np.ndarray) or frame.ndim != 2 or frame.dtype != np.float32):
 					raise ValueError(f"Parameter '{Message.FRAME_ATTR_NAME}' must be a numpy array with dimension 2 and dtype np.float32")
 				setattr(msg, Message.FRAME_ATTR_NAME, kwargs[Message.FRAME_ATTR_NAME])
 
 				frame_height, frame_width = frame.shape
 				payload_content += struct.pack(f">HH", frame_height, frame_width)
-				payload_content += struct.pack(f">{frame_height*frame_width}f", frame.flatten())
+				payload_content += struct.pack(f">{frame_height*frame_width}f", *frame.flatten())
 
 		else:
 			raise ValueError(f"Unknown message type {msg.msg_type}")

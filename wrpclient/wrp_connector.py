@@ -272,8 +272,6 @@ class WRPConnector:
 		await self.__driver.send_message(request)
 		# Await response and check if is correct
 		response = await self.__driver.receive_message()
-		print("L: Message type:", response.msg_type, type(response.msg_type))
-		print("R: Message type:", Message.Type.CAMERA_LIST, type(Message.Type.CAMERA_LIST))
 		if(response.msg_type != Message.Type.CAMERA_LIST):
 			raise ConnectionResetError(f"Something bad is happening, server responded with unexpected message {response.msg_type} (expected was {Message.Type.CAMERA_LIST})")
 		return Message.xml_to_camera_list(self, getattr(response, Message.XML_CAMERA_LIST_ATTR_NAME))
@@ -400,7 +398,6 @@ class WRPConnector:
 		if(not callable(callback)):
 			raise ValueError("Given callback must be a callable")
 		self.__continuous_callback = callback
-		print("Creating __continuous_thread")
 		self.__continuous_thread = threading.Thread(target=self.__handle_continuous_shot_state, args=(self.__event_loop,))
 		
 		if(self.__state == WRPConnector.State.IDLE):
@@ -424,7 +421,6 @@ class WRPConnector:
 			raise ValueError(f"Server responded with error code {error_code}")
 		else:
 			raise ValueError(f"Server responded with unexpected message {response.msg_type}")
-		print("Starting __continuous_thread")
 		self.__continuous_thread.start()
 
 	async def stop_continuous_shot_async(self, camera_serial_number):
@@ -448,12 +444,9 @@ class WRPConnector:
 		if(not camera_serial_number == self.__active_camera):
 			raise ValueError(f"Camera with serial number {camera_serial_number} is not open")
 
-		print("Setting __continuous_shot_aborted=True")
 		self.__continuous_shot_aborted = True
-		print("Sending STOP_CONTINUOUS_GRABBING message")
 		request = Message.create_message(message_type=Message.Type.STOP_CONTINUOUS_GRABBING)
 		await self.__driver.send_message(request)
-		print("Joining __continuous_thread")
 		self.__continuous_thread.join()
 
 		if(self.__continuous_last_message is not None):
@@ -473,20 +466,15 @@ class WRPConnector:
 		self.__last_continuous_message = None
 
 	def __handle_continuous_shot_state(self, event_loop):
-		print("Entering to __handle_continuous_shot_state")
 		asyncio.set_event_loop(event_loop)
 		event_loop.run_until_complete(self.__handle_continuous_shot_state_async())
 		
 	async def __handle_continuous_shot_state_async(self):
-		print("Entering to __handle_continuous_shot_state_async")
 		while(True):
-			print("Awaiting message to receive")
 			response = await self.__driver.receive_message()
-			print(f"Message {response} received")
 			if(response.msg_type in [Message.Type.OK, Message.Type.ERROR]):
 				if(self.__continuous_shot_aborted):
 					self.__continuous_last_message = response
-					print("Filling __continuous_last_message")
 					break
 				else:
 					raise ValueError(f"Server responded with unexpected message {response.msg_type} when continuous shot was not aborted")
@@ -494,7 +482,6 @@ class WRPConnector:
 				if(self.__continuous_shot_aborted):
 					pass
 				else:
-					print("Calling callback")
 			else:
 				raise ValueError(f"Server responded with unexpected message {response.msg_type}")
 	
