@@ -268,7 +268,7 @@ class Message:
 		'''
 		try:
 			root = ET.fromstring(xml)
-		except ParseError:
+		except ET.ParseError:
 			raise ValueError("Received XML could not be parsed")
 
 		if(root.tag != "Cameras"):
