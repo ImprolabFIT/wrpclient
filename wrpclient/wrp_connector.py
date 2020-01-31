@@ -520,9 +520,7 @@ class WRPConnector:
                     raise ValueError(
                         f"Server responded with unexpected message {response.msg_type} when continuous shot was not aborted")
             elif(response.msg_type == Message.Type.FRAME):
-                if(self.__continuous_shot_aborted):
-                    pass
-                else:
+                pass
             else:
                 raise ValueError(
                     f"Server responded with unexpected message {response.msg_type}")
